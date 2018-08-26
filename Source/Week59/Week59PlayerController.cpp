@@ -3,6 +3,7 @@
 #include "Week59PlayerController.h"
 #include "Blueprint/AIBlueprintHelperLibrary.h"
 #include "Runtime/Engine/Classes/Components/DecalComponent.h"
+#include "Kismet/KismetMathLibrary.h"
 #include "HeadMountedDisplayFunctionLibrary.h"
 #include "Week59Character.h"
 #include "Engine/World.h"
@@ -20,7 +21,7 @@ void AWeek59PlayerController::PlayerTick(float DeltaTime)
 	// keep updating the destination every tick while desired
 	if (bMoveToMouseCursor)
 	{
-		MoveToMouseCursor();
+		RotateCharacter();
 	}
 }
 
@@ -44,7 +45,7 @@ void AWeek59PlayerController::OnResetVR()
 	UHeadMountedDisplayFunctionLibrary::ResetOrientationAndPosition();
 }
 
-void AWeek59PlayerController::MoveToMouseCursor()
+void AWeek59PlayerController::RotateCharacter()
 {
 	if (UHeadMountedDisplayFunctionLibrary::IsHeadMountedDisplayEnabled())
 	{
@@ -52,7 +53,30 @@ void AWeek59PlayerController::MoveToMouseCursor()
 		{
 			if (MyPawn->GetCursorToWorld())
 			{
-				UAIBlueprintHelperLibrary::SimpleMoveToLocation(this, MyPawn->GetCursorToWorld()->GetComponentLocation());
+
+				FVector MouseLocation, MouseDirection, MouseLocationEnd;
+				FHitResult HitResult;
+
+				this->DeprojectMousePositionToWorld(MouseLocation, MouseDirection);
+
+				MouseLocationEnd = (MouseDirection * 10000) + MouseLocation;
+
+				FCollisionQueryParams TraceSettings;
+				FCollisionResponseParams TraceResponses;
+
+				if (GetWorld()->LineTraceSingleByChannel(HitResult, MouseLocation, MouseLocationEnd, ECollisionChannel::ECC_WorldStatic, TraceSettings, TraceResponses) == true)
+				{
+					FRotator NewRotation = UKismetMathLibrary::FindLookAtRotation(MyPawn->GetActorLocation(), HitResult.ImpactPoint);
+					
+					MyPawn->SetActorRotation(FRotator(GetControlRotation().Pitch, NewRotation.Yaw, GetControlRotation().Roll));
+
+					UE_LOG(LogTemp, Error, TEXT("Should be rotating"));
+				}
+				else
+				{
+					UE_LOG(LogTemp, Error, TEXT("Didn't work"));
+				}
+				/*UAIBlueprintHelperLibrary::SimpleMoveToLocation(this, MyPawn->GetCursorToWorld()->GetComponentLocation());*/
 			}
 		}
 	}
