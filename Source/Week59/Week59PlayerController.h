@@ -29,6 +29,10 @@ protected:
 	/** Navigate player to the current mouse cursor location. */
 	void RotateCharacter();
 
+	void MoveForward(float Value);
+
+	void MoveRight(float Value);
+
 	/** Navigate player to the current touch location. */
 	void MoveToTouchLocation(const ETouchIndex::Type FingerIndex, const FVector Location);
 	

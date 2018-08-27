@@ -33,6 +33,9 @@ void AWeek59PlayerController::SetupInputComponent()
 	InputComponent->BindAction("SetDestination", IE_Pressed, this, &AWeek59PlayerController::OnSetDestinationPressed);
 	InputComponent->BindAction("SetDestination", IE_Released, this, &AWeek59PlayerController::OnSetDestinationReleased);
 
+	InputComponent->BindAxis("MoveForward", this, &AWeek59PlayerController::MoveForward);
+	InputComponent->BindAxis("MoveRight", this, &AWeek59PlayerController::MoveRight);
+
 	// support touch devices 
 	InputComponent->BindTouch(EInputEvent::IE_Pressed, this, &AWeek59PlayerController::MoveToTouchLocation);
 	InputComponent->BindTouch(EInputEvent::IE_Repeat, this, &AWeek59PlayerController::MoveToTouchLocation);
@@ -49,6 +52,12 @@ void AWeek59PlayerController::RotateCharacter()
 {
 	if (UHeadMountedDisplayFunctionLibrary::IsHeadMountedDisplayEnabled())
 	{
+
+	}
+	else
+	{
+
+
 		if (AWeek59Character* MyPawn = Cast<AWeek59Character>(GetPawn()))
 		{
 			if (MyPawn->GetCursorToWorld())
@@ -67,10 +76,8 @@ void AWeek59PlayerController::RotateCharacter()
 				if (GetWorld()->LineTraceSingleByChannel(HitResult, MouseLocation, MouseLocationEnd, ECollisionChannel::ECC_WorldStatic, TraceSettings, TraceResponses) == true)
 				{
 					FRotator NewRotation = UKismetMathLibrary::FindLookAtRotation(MyPawn->GetActorLocation(), HitResult.ImpactPoint);
-					
-					MyPawn->SetActorRotation(FRotator(GetControlRotation().Pitch, NewRotation.Yaw, GetControlRotation().Roll));
 
-					UE_LOG(LogTemp, Error, TEXT("Should be rotating"));
+					MyPawn->SetActorRotation(FRotator(GetControlRotation().Pitch, NewRotation.Yaw, GetControlRotation().Roll));
 				}
 				else
 				{
@@ -79,18 +86,20 @@ void AWeek59PlayerController::RotateCharacter()
 				/*UAIBlueprintHelperLibrary::SimpleMoveToLocation(this, MyPawn->GetCursorToWorld()->GetComponentLocation());*/
 			}
 		}
-	}
-	else
-	{
-		// Trace to see what is under the mouse cursor
-		FHitResult Hit;
-		GetHitResultUnderCursor(ECC_Visibility, false, Hit);
 
-		if (Hit.bBlockingHit)
-		{
-			// We hit something, move there
-			SetNewMoveDestination(Hit.ImpactPoint);
-		}
+
+
+
+		// Trace to see what is under the mouse cursor
+		//FHitResult Hit;
+		//GetHitResultUnderCursor(ECC_Visibility, false, Hit);
+
+		//if (Hit.bBlockingHit)
+		//{
+		//	// We hit something, move there
+		//	UE_LOG(LogTemp, Error, TEXT("Failing to find pawn"));
+		//	SetNewMoveDestination(Hit.ImpactPoint);
+		//}
 	}
 }
 
@@ -133,4 +142,51 @@ void AWeek59PlayerController::OnSetDestinationReleased()
 {
 	// clear flag to indicate we should stop updating the destination
 	bMoveToMouseCursor = false;
+}
+
+
+void AWeek59PlayerController::MoveForward(float Value)
+{
+	if (Value != 0.0f)
+	{
+		// find out which way is forward
+		const FRotator Rotation = GetControlRotation();
+		const FRotator YawRotation(0, Rotation.Yaw, 0);
+
+		// get forward vector
+		const FVector Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
+
+		APawn* const MyPawn = GetPawn();
+		if (MyPawn)
+		{
+			MyPawn->AddMovementInput(Direction, Value);
+		}
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("Unable to find Pawn in MoveForward"));
+		}
+	}
+}
+
+void AWeek59PlayerController::MoveRight(float Value)
+{
+	if (Value != 0.0f)
+	{
+		// find out which way is right
+		const FRotator Rotation = GetControlRotation();
+		const FRotator YawRotation(0, Rotation.Yaw, 0);
+
+		// get right vector 
+		const FVector Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
+		// add movement in that direction
+		APawn* const MyPawn = GetPawn();
+		if (MyPawn)
+		{
+			MyPawn->AddMovementInput(Direction, Value);
+		}
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("Unable to find Pawn in MoveRight"));
+		}
+	}
 }
